@@ -11,12 +11,11 @@ class Snippet_Views_SinglePost{
 		if( !$this->active_for_post() ){
 			return;
 		}
-		if( is_singular() && $this->post()->post_type === 'post' ){
+		if( is_singular() && ($this->post()->post_type === 'post' || $this->post()->post_type === 'sp_solution') ){
 			wp_enqueue_script( 'snippet-client' );
 			wp_enqueue_style( 'snippet-client' );
 			add_filter( 'wp_head', Array($this, 'inject_account_key') );
 			add_filter( 'wp_footer', Array($this, 'snippet_setup_script'), 30 );
-			add_filter( 'comments_open', array($this, 'close_comments'), 10, 2 );
 		}
 	}
 
@@ -94,18 +93,11 @@ class Snippet_Views_SinglePost{
 
 	public function snippet_setup_script(){ ?>
 		<script type="text/javascript">
-		<?php if(!$this->has_wordpress_comments()): ?>
-		// Remove wordpress comments
-		jQuery(function(){
-			jQuery('<?php echo get_option('snippet_comment_class', SNIPPET_COMMENT_CLASS_DEFAULT) ?>').html('');
-		})
-		<?php endif; ?>
 		var snippet = new Highlight("<?php echo get_option('snippet_account_key') ?>", "<?php echo $this->post_id() ?>", {
-	 contentSelector: "<?php echo get_option('snippet_post_content_class', SNIPPET_CONTENT_CLASS_DEFAULT) ?>",
- 	titleSelector: "<?php echo get_option('snippet_post_title_class', SNIPPET_TITLE_CLASS_DEFAULT) ?>",
+	 contentSelector: ".<?php echo get_option('snippet_post_content_class', SNIPPET_CONTENT_CLASS_DEFAULT) ?>",
+ 	titleSelector: ".<?php echo get_option('snippet_post_title_class', SNIPPET_TITLE_CLASS_DEFAULT) ?>",
  	readOnly: <?php echo $this->writable_for_post() ? 'false' : 'true'?>,
 	twitterUsername: <?php $u = get_option('snippet_twitter_username'); echo $u ? "'" . $u . "'": 'false' ?>,
-	articleEndSelector: "<?php echo get_option('snippet_comment_class', SNIPPET_COMMENT_CLASS_DEFAULT) ?>",
  	endOfArticleComments: <?php echo $this->has_wordpress_comments() ? 'false' : 'true' ?>});
 		snippet.start();
 		</script>
@@ -115,19 +107,5 @@ class Snippet_Views_SinglePost{
 		return str_replace(
 			"{id}", get_the_ID(), get_option('post_id_format', SNIPPET_POST_ID_DEFAULT)
 		);
-	}
-
-	public function close_comments($open, $post_id){
-		// Already closed? Let's go with that
-		if (!$open )
-			return $open;
-
-		// If it's this post, open depends on whether we have comments
-		if( $this->active_for_post()){
-			return $this->has_wordpress_comments();
-		}
-
-		// Fallback
-		return $open;
 	}
 }
